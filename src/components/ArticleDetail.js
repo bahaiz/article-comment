@@ -3,43 +3,50 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+const INITIAL_COMMENT = {
+  display_name: "",
+  body: "",
+};
+
 const ArticleDetail = () => {
   const params = useParams();
 
   const [articleDetail, setArticleDetail] = useState({});
   const [comments, setComments] = useState([]);
 
-  const [comment, setComment] = useState({
-    display_name: '',
-    body: ''
-  });
+  const [comment, setComment] = useState(INITIAL_COMMENT);
 
-  const handleCommentSubmit = (comment) => {
+  const handleCommentSubmit = (event) => {
+    event.preventDefault();
     axios
-      .post(`https://react-yazi-yorum.herokuapp.com/posts/${params.id}/comments`, comment)
+      .post(
+        `https://react-yazi-yorum.herokuapp.com/posts/${params.id}/comments`,
+        comment
+      )
       .then((response) => {
-        setComments([...comments, response.data ]);
-      })
-  }
-
-  const handleOnChange = (event) => {
-    setComment({...comment, [event.target.name]: event.target.value});
-  }
-
-  useEffect(() => {
-    axios
-      .get(`https://react-yazi-yorum.herokuapp.com/posts/${params.id}`)
-      .then((response) => {
-        setArticleDetail(response.data);
+        setComments([...comments, response.data]);
+        setComment(INITIAL_COMMENT);
       })
       .catch((error) => {
         console.log(error);
       });
+  };
 
+  const handleOnChange = (event) => {
+    setComment({ ...comment, [event.target.name]: event.target.value });
+  };
+
+  useEffect(() => {
     axios
-      .get(`https://react-yazi-yorum.herokuapp.com/posts/${params.id}/comments`)
+      .all([
+        axios.get(`https://react-yazi-yorum.herokuapp.com/posts/${params.id}`),
+        axios.get(
+          `https://react-yazi-yorum.herokuapp.com/posts/${params.id}/comments`
+        ),
+      ])
       .then((response) => {
-        setComments(response.data);
+        setArticleDetail(response[0].data);
+        setComments(response[1].data);
       })
       .catch((error) => {
         console.log(error);
@@ -72,10 +79,7 @@ const ArticleDetail = () => {
       <h3>Write Comment</h3>
       <form
         className="ui form"
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleCommentSubmit(comment);
-        }}
+        onSubmit={handleCommentSubmit}
       >
         <div className="ui mini icon input">
           <input
@@ -91,9 +95,11 @@ const ArticleDetail = () => {
           placeholder="Comment"
           rows="3"
           onChange={handleOnChange}
-          value={comment.value}
+          value={comment.body}
         ></textarea>
-        <button className="ui blue button" type="submit" >Comment</button>
+        <button className="ui blue button" type="submit">
+          Comment
+        </button>
       </form>
     </>
   );
